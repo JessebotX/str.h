@@ -11,6 +11,8 @@ A single-file header-only (stb-style) implementation of a non-null-terminated `s
 
 Download `str.h` and include it. _By default, it only includes type/function declarations. If you want to include function definitions/implementations, define `STR_IMPLEMENTATION` BEFORE including `str.h`_.
 
+### Example
+
 ```c
 #define STR_IMPLEMENTATION
 #include "str.h"

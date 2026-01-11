@@ -1,4 +1,4 @@
-# str
+# `str.h`
 
 A single-file header-only (stb-style) implementation of a non-null-terminated `string` type that can act as both a dynamically-sized string and a string view (i.e. similar to C++ `std::string` and `std::string_view`).
 

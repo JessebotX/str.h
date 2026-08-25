@@ -114,6 +114,14 @@ STR_DEF STR_BOOL_T str_equal(struct str a, struct str b);
 STR_DEF struct str str_substr(struct str s, STR_SIZE_T begin, STR_SIZE_T end);
 STR_DEF struct str str_substr_n(struct str s, STR_SIZE_T begin, STR_SIZE_T len);
 
+STR_DEF STR_SIZE_T str_find_char_front(struct str s, STR_CHAR_T c);
+STR_DEF STR_SIZE_T str_find_char_back(struct str s, STR_CHAR_T c);
+STR_DEF STR_SIZE_T str_find_str_front(struct str s, struct str a);
+STR_DEF STR_SIZE_T str_find_str_back(struct str s, struct str a);
+
+STR_DEF STR_BOOL_T str_has_str_prefix(struct str s, struct str a);
+STR_DEF STR_BOOL_T str_has_str_suffix(struct str s, struct str a);
+
 STR_INTERNAL struct cstr cstr__from_bytes_n(const STR_CHAR_T* bytes, STR_SIZE_T len);
 
 #ifdef STR_ENABLE_INTERNAL_STRLEN
@@ -317,6 +325,72 @@ STR_DEF struct str str_substr_n(struct str s, STR_SIZE_T begin, STR_SIZE_T len)
    result.bytes = s.bytes + begin;
    result.len = len;
    return result;
+}
+
+STR_DEF STR_SIZE_T str_find_char_front(struct str s, STR_CHAR_T c)
+{
+   STR_SIZE_T i;
+   for (i = 0; i < s.len; i++) {
+      if (s.bytes[i] == c) {
+         return i;
+      }
+   }
+   return s.len;
+}
+
+STR_DEF STR_SIZE_T str_find_char_back(struct str s, STR_CHAR_T c)
+{
+   STR_SIZE_T i;
+   for (i = s.len; i-- > 0;) {
+      if (s.bytes[i] == c) {
+         return i;
+      }
+   }
+   return s.len;
+}
+
+STR_DEF STR_SIZE_T str_find_str_front(struct str s, struct str a)
+{
+   STR_SIZE_T i;
+   for (i = 0; i < s.len - a.len + 1; i++) {
+      struct str it = str_substr_n(s, i, a.len);
+      if (str_equal(it, a)) {
+         return i;
+      }
+   }
+   return s.len;
+}
+
+STR_DEF STR_SIZE_T str_find_str_back(struct str s, struct str a)
+{
+   STR_SIZE_T i;
+   for (i = s.len - a.len + 1; i-- > 0;) {
+      struct str it = str_substr_n(s, i, a.len);
+      if (str_equal(it, a)) {
+         return i;
+      }
+   }
+   return s.len;
+}
+
+STR_DEF STR_BOOL_T str_has_str_prefix(struct str s, struct str a)
+{
+   struct str current;
+   if (s.len < a.len) {
+      return 0;
+   }
+   current = str_substr(s, 0, a.len);
+   return str_equal(current, a);
+}
+
+STR_DEF STR_BOOL_T str_has_str_suffix(struct str s, struct str a)
+{
+   struct str current;
+   if (s.len < a.len) {
+      return 0;
+   }
+   current = str_substr(s, s.len - a.len, s.len);
+   return str_equal(current, a);
 }
 
 STR_INTERNAL struct cstr cstr__from_bytes_n(const STR_CHAR_T* bytes, STR_SIZE_T len)

@@ -76,16 +76,35 @@
    #define NULL ((void*)0)
 #endif
 
+/**
+ * Read-only view of a string *not* guaranteed to have a null
+ * terminator '\0'.
+ */
 struct str {
    const STR_CHAR_T* bytes;
    STR_SIZE_T len;
 };
 
+/**
+ * Read-only view of a string *guaranteed* to have a null terminator
+ * '\0'.
+ *
+ * Useful for functions that require a null-terminated string (e.g.
+ * POSIX open(), Win32 CreateFileA(), etc.).
+ */
 struct cstr {
    const STR_CHAR_T* bytes;
    STR_SIZE_T len;
 };
 
+/**
+ * A dynamically-sized string of length LEN with a null terminator
+ * '\0' at index LEN.
+ *
+ * CAP stores the allocated size of BYTES. Max length before a
+ * reallocation is (CAP - 1). CAP includes the byte for null
+ * terminator.
+ */
 struct cstrbuf {
    STR_CHAR_T* bytes;
    STR_SIZE_T len;

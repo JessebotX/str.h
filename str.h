@@ -60,6 +60,11 @@
    #define STR_MEMCPY str__memcpy
 #endif
 
+#ifndef STR_ISSPACE
+   #define STR_ENABLE_INTERNAL_ISSPACE
+   #define STR_ISSPACE str__isspace
+#endif
+
 #ifndef STR_ASSERT
    #include <assert.h>
    #define STR_ASSERT assert
@@ -119,8 +124,25 @@ STR_DEF STR_SIZE_T str_find_char_back(struct str s, STR_CHAR_T c);
 STR_DEF STR_SIZE_T str_find_str_front(struct str s, struct str a);
 STR_DEF STR_SIZE_T str_find_str_back(struct str s, struct str a);
 
+STR_DEF struct str str_cut_front(struct str s, STR_SIZE_T n);
+STR_DEF struct str str_cut_back(struct str s, STR_SIZE_T n);
+STR_DEF struct cstr cstr_cut_front(struct cstr s, STR_SIZE_T n);
+
 STR_DEF STR_BOOL_T str_has_str_prefix(struct str s, struct str a);
 STR_DEF STR_BOOL_T str_has_str_suffix(struct str s, struct str a);
+STR_DEF struct str str_trim_str_prefix(struct str s, struct str a);
+STR_DEF struct str str_trim_str_suffix(struct str s, struct str a);
+STR_DEF struct cstr cstr_trim_str_prefix(struct cstr s, struct str a);
+
+STR_DEF struct str str_trim_func(struct str s, int trim_func(int c));
+STR_DEF struct str str_trim_func_front(struct str s, int trim_func(int c));
+STR_DEF struct str str_trim_func_back(struct str s, int trim_func(int c));
+STR_DEF struct str str_trim_space(struct str s);
+STR_DEF struct str str_trim_space_front(struct str s);
+STR_DEF struct str str_trim_space_back(struct str s);
+
+STR_DEF struct cstr cstr_trim_func_front(struct cstr s, int trim_func(int c));
+STR_DEF struct cstr cstr_trim_space_front(struct cstr s);
 
 STR_INTERNAL struct cstr cstr__from_bytes_n(const STR_CHAR_T* bytes, STR_SIZE_T len);
 
@@ -134,6 +156,10 @@ STR_INTERNAL int str__strncmp(const STR_CHAR_T* a, const STR_CHAR_T* b, STR_SIZE
 
 #ifdef STR_ENABLE_INTERNAL_MEMCPY
 STR_INTERNAL void* str__memcpy(void* destination, const void* source, STR_SIZE_T n);
+#endif
+
+#ifdef STR_ENABLE_INTERNAL_ISSPACE
+STR_INTERNAL int str__isspace(int c);
 #endif
 
 #ifdef __cplusplus
@@ -327,6 +353,42 @@ STR_DEF struct str str_substr_n(struct str s, STR_SIZE_T begin, STR_SIZE_T len)
    return result;
 }
 
+STR_DEF struct str str_cut_front(struct str s, STR_SIZE_T n)
+{
+   struct str result;
+   STR_ASSERT(n >= 0);
+
+   n = n < s.len ? n : s.len;
+
+   result.bytes = s.bytes + n;
+   result.len = s.len - n;
+   return result;
+}
+
+STR_DEF struct str str_cut_back(struct str s, STR_SIZE_T n)
+{
+   struct str result;
+   STR_ASSERT(n >= 0);
+
+   n = n < s.len ? n : s.len;
+
+   result.bytes = s.bytes;
+   result.len = s.len - n;
+   return result;
+}
+
+STR_DEF struct cstr cstr_cut_front(struct cstr s, STR_SIZE_T n)
+{
+   struct cstr result;
+   STR_ASSERT(n >= 0);
+
+   n = n < s.len ? n : s.len;
+
+   result.bytes = s.bytes + n;
+   result.len = s.len - n;
+   return result;
+}
+
 STR_DEF STR_SIZE_T str_find_char_front(struct str s, STR_CHAR_T c)
 {
    STR_SIZE_T i;
@@ -393,6 +455,104 @@ STR_DEF STR_BOOL_T str_has_str_suffix(struct str s, struct str a)
    return str_equal(current, a);
 }
 
+STR_DEF struct str str_trim_str_prefix(struct str s, struct str a)
+{
+   if (!str_has_str_prefix(s, a)) {
+      return s;
+   }
+   return str_substr(s, a.len, s.len);
+}
+
+STR_DEF struct str str_trim_str_suffix(struct str s, struct str a)
+{
+   if (!str_has_str_suffix(s, a)) {
+      return s;
+   }
+   return str_substr(s, 0, s.len - a.len);
+}
+
+STR_DEF struct cstr cstr_trim_str_prefix(struct cstr s, struct str a)
+{
+   if (!str_has_str_prefix(str_from_cstr(s), a)) {
+      return s;
+   }
+   return cstr_cut_front(s, a.len);
+}
+
+STR_DEF struct str str_trim_func(struct str s, int trim_func(int c))
+{
+   return str_trim_func_front(str_trim_func_back(s, trim_func), trim_func);
+}
+
+STR_DEF struct str str_trim_func_front(struct str s, int trim_func(int c))
+{
+   STR_SIZE_T i;
+
+   if (!trim_func) {
+      return s;
+   }
+
+   for (i = 0; i < s.len; i++) {
+      if (!trim_func(s.bytes[i])) {
+         return str_substr(s, i, s.len);
+      }
+   }
+   return str_from_bytes_n(s.bytes + s.len, 0);
+}
+
+STR_DEF struct str str_trim_func_back(struct str s, int trim_func(int c))
+{
+   STR_SIZE_T i;
+
+   if (!trim_func) {
+      return s;
+   }
+
+   for (i = s.len; i-- > 0;) {
+      if (!trim_func(s.bytes[i])) {
+         return str_substr(s, 0, i + 1);
+      }
+   }
+   return str_from_bytes_n(s.bytes, 0);
+}
+
+STR_DEF struct str str_trim_space(struct str s)
+{
+   return str_trim_space_front(str_trim_space_back(s));
+}
+
+STR_DEF struct str str_trim_space_front(struct str s)
+{
+   return str_trim_func_front(s, STR_ISSPACE);
+}
+
+STR_DEF struct str str_trim_space_back(struct str s)
+{
+   return str_trim_func_back(s, STR_ISSPACE);
+}
+
+STR_DEF struct cstr cstr_trim_func_front(struct cstr s, int trim_func(int c))
+{
+   STR_SIZE_T i;
+   struct cstr empty = STR__EMPTY_VALUE;
+
+   if (!trim_func) {
+      return s;
+   }
+
+   for (i = 0; i < s.len; i++) {
+      if (!trim_func(s.bytes[i])) {
+         return cstr_cut_front(s, i);
+      }
+   }
+   return empty;
+}
+
+STR_DEF struct cstr cstr_trim_space_front(struct cstr s)
+{
+   return cstr_trim_func_front(s, STR_ISSPACE);
+}
+
 STR_INTERNAL struct cstr cstr__from_bytes_n(const STR_CHAR_T* bytes, STR_SIZE_T len)
 {
    struct cstr result;
@@ -440,6 +600,13 @@ STR_INTERNAL void* str__memcpy(void* destination, const void* source, STR_SIZE_T
       ((char*)destination)[i] = ((const char*)source)[i];
    }
    return destination;
+}
+#endif
+
+#ifdef STR_ENABLE_INTERNAL_ISSPACE
+STR_INTERNAL int str__isspace(int c)
+{
+   return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f' || c == '\v';
 }
 #endif
 

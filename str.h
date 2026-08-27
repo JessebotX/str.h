@@ -1,5 +1,34 @@
+/** str.h
+ *
+ *   C89+ single-file header-only string view/string builder
+ *   implementation/helper library. No dependencies. Standard library
+ *   optional.
+ *
+ * # License
+ *
+ *   * SPDX-License-Identifier: `0BSD`
+ *
+ *   Copyright (c) 2026 Jesse <jessebot.git@gmail.com>
+ *
+ *   Permission to use, copy, modify, and/or distribute this software
+ *   for any purpose with or without fee is hereby granted.
+ *
+ *   THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
+ *   WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
+ *   WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+ *   AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR
+ *   CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+ *   LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT,
+ *   NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
+ *   CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
+
 #ifndef STR_H
 #define STR_H
+
+#define STR_VERSION_MAJOR 0
+#define STR_VERSION_MINOR 2
+#define STR_VERSION_MICRO 0
 
 #ifndef STR_DEF
    #define STR_DEF

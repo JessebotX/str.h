@@ -60,6 +60,11 @@
    #define STR_MEMCPY str__memcpy
 #endif
 
+#ifndef STR_MEMSET
+   #define STR_ENABLE_INTERNAL_MEMSET
+   #define STR_MEMSET str__memset
+#endif
+
 #ifndef STR_ISSPACE
    #define STR_ENABLE_INTERNAL_ISSPACE
    #define STR_ISSPACE str__isspace
@@ -163,6 +168,9 @@ STR_DEF struct str str_trim_space_back(struct str s);
 STR_DEF struct cstr cstr_trim_func_front(struct cstr s, int trim_func(int c));
 STR_DEF struct cstr cstr_trim_space_front(struct cstr s);
 
+STR_DEF struct cstrbuf cstrbuf_append_str(struct cstrbuf* s, struct str a);
+STR_DEF struct cstrbuf cstrbuf_copy_from_str(struct cstrbuf* s, struct str a);
+
 STR_INTERNAL struct cstr cstr__from_bytes_n(const STR_CHAR_T* bytes, STR_SIZE_T len);
 
 #ifdef STR_ENABLE_INTERNAL_STRLEN
@@ -175,6 +183,10 @@ STR_INTERNAL int str__strncmp(const STR_CHAR_T* a, const STR_CHAR_T* b, STR_SIZE
 
 #ifdef STR_ENABLE_INTERNAL_MEMCPY
 STR_INTERNAL void* str__memcpy(void* destination, const void* source, STR_SIZE_T n);
+#endif
+
+#ifdef STR_ENABLE_INTERNAL_MEMSET
+STR_INTERNAL void* str__memset(void* destination, char c, STR_SIZE_T n);
 #endif
 
 #ifdef STR_ENABLE_INTERNAL_ISSPACE
@@ -572,6 +584,80 @@ STR_DEF struct cstr cstr_trim_space_front(struct cstr s)
    return cstr_trim_func_front(s, STR_ISSPACE);
 }
 
+STR_DEF struct cstrbuf cstrbuf_append_str(struct cstrbuf* s, struct str a)
+{
+   STR_SIZE_T new_len;
+   struct cstrbuf empty = STR__EMPTY_VALUE;
+   if (!s) {
+      return empty;
+   }
+
+   new_len = s->len + a.len;
+   if (s->cap == 0) {
+      *s = cstrbuf_from_str(s);
+      return *s;
+   } else if (s->cap <= new_len) {
+      STR_CHAR_T* tmp = NULL;
+      STR_SIZE_T new_cap = s->cap * 2;
+
+      while (new_cap <= new_len) {
+         new_cap *= 2;
+         STR_ASSERT(new_cap > 0 && "overflow");
+      }
+
+      tmp = (STR_CHAR_T*)STR_REALLOC(s->bytes, new_cap * sizeof(*s->bytes), s->cap * sizeof(*s->bytes));
+      if (!tmp) {
+         return empty;
+      }
+      s->bytes = tmp;
+      s->cap = new_cap;
+   }
+
+   STR_ASSERT(s->bytes[s->len] == '\0' && "invariant violated somehow");
+   STR_MEMCPY(s->bytes + s->len, a.bytes, a.len * sizeof(*s->bytes));
+   s->len = new_len;
+   s->bytes[s->len] = '\0';
+
+   return *s;
+}
+
+STR_DEF struct cstrbuf cstrbuf_copy_from_str(struct cstrbuf* s, struct str a)
+{
+   STR_SIZE_T new_len;
+   struct cstrbuf empty = STR__EMPTY_VALUE;
+   if (!s) {
+      return empty;
+   }
+
+   new_len = a.len;
+   if (s->cap == 0) {
+      *s = cstrbuf_from_str(s);
+      return *s;
+   } else if (s->cap <= new_len) {
+      STR_CHAR_T* tmp = NULL;
+      STR_SIZE_T new_cap = s->cap * 2;
+
+      while (new_cap <= new_len) {
+         new_cap *= 2;
+         STR_ASSERT(new_cap > 0 && "overflow");
+      }
+
+      tmp = (STR_CHAR_T*)STR_REALLOC(s->bytes, new_cap * sizeof(*s->bytes), s->cap * sizeof(*s->bytes));
+      if (!tmp) {
+         return empty;
+      }
+      s->bytes = tmp;
+      s->cap = new_cap;
+   }
+
+   STR_MEMSET(s->bytes, 0, s->len * sizeof(*s->bytes));
+   STR_MEMCPY(s->bytes, a.bytes, a.len * sizeof(*s->bytes));
+   s->len = new_len;
+   s->bytes[s->len] = '\0';
+
+   return *s;
+}
+
 STR_INTERNAL struct cstr cstr__from_bytes_n(const STR_CHAR_T* bytes, STR_SIZE_T len)
 {
    struct cstr result;
@@ -617,6 +703,17 @@ STR_INTERNAL void* str__memcpy(void* destination, const void* source, STR_SIZE_T
    STR_SIZE_T i;
    for (i = 0; i < n; i++) {
       ((char*)destination)[i] = ((const char*)source)[i];
+   }
+   return destination;
+}
+#endif
+
+#ifdef STR_ENABLE_INTERNAL_MEMSET
+STR_INTERNAL void* str__memset(void* destination, char c, STR_SIZE_T n)
+{
+   STR_SIZE_T i;
+   for (i = 0; i < n; i++) {
+      ((char*)destination)[i] = c;
    }
    return destination;
 }
